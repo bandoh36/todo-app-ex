@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { Task } from '@/types'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 const statusLabel: Record<Task['status'], string> = {
   todo: '未着手',
@@ -9,10 +10,17 @@ const statusLabel: Record<Task['status'], string> = {
   done: '完了',
 }
 
+const statusBadgeClass: Record<Task['status'], string> = {
+  todo: 'border-amber-200/60 bg-amber-300/20 text-amber-50',
+  doing: 'border-sky-200/60 bg-sky-300/20 text-sky-50',
+  done: 'border-emerald-200/60 bg-emerald-300/20 text-emerald-50',
+}
+
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | Task['status']>('all')
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     getAPI()
@@ -21,10 +29,11 @@ export default function TaskList() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('このタスクを削除しますか？')) return
-    await getAPI().tasks.delete(id)
-    setTasks((prev) => prev.filter((task) => task.id !== id))
+  const handleDelete = async () => {
+    if (!deleteTargetId) return
+    await getAPI().tasks.delete(deleteTargetId)
+    setTasks((prev) => prev.filter((task) => task.id !== deleteTargetId))
+    setDeleteTargetId(null)
   }
 
   const filtered = useMemo(() => {
@@ -82,8 +91,10 @@ export default function TaskList() {
               <div className="min-w-0 flex-1">
                 <Link to={`/tasks/${task.id}`} className="block hover:opacity-80">
                   <span className="font-medium text-gray-800">{task.title}</span>
-                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
-                    {statusLabel[task.status]}
+                  <span
+                    className={`ml-2 inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${statusBadgeClass[task.status]}`}
+                  >
+                    状態: {statusLabel[task.status]}
                   </span>
                   {task.dueDate && (
                     <span className="ml-2 text-sm text-gray-500">期限: {task.dueDate}</span>
@@ -102,7 +113,7 @@ export default function TaskList() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => handleDelete(task.id)}
+                  onClick={() => setDeleteTargetId(task.id)}
                   className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
                 >
                   削除
@@ -112,6 +123,13 @@ export default function TaskList() {
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="タスクを削除しますか？"
+        message="この操作は取り消せません。"
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

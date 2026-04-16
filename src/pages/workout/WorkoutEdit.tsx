@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 
@@ -14,6 +14,7 @@ export default function WorkoutEdit() {
   const [loading, setLoading] = useState(!!id)
   const [date, setDate] = useState(initialDate)
   const [content, setContent] = useState('')
+  const contentInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!id) {
@@ -31,6 +32,14 @@ export default function WorkoutEdit() {
         setLoading(false)
       })
   }, [id, initialDate])
+
+  useEffect(() => {
+    if (loading) return
+    requestAnimationFrame(() => {
+      contentInputRef.current?.focus()
+      window.focus()
+    })
+  }, [loading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,6 +84,7 @@ export default function WorkoutEdit() {
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="メニューやメモ"
             required
+            ref={contentInputRef}
           />
         </div>
         <div className="flex gap-2">

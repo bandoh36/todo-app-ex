@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { TaskStatus } from '@/types'
@@ -17,6 +17,7 @@ export default function TaskEdit() {
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [status, setStatus] = useState<TaskStatus>('todo')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!id) {
@@ -36,6 +37,14 @@ export default function TaskEdit() {
         setLoading(false)
       })
   }, [id])
+
+  useEffect(() => {
+    if (loading) return
+    requestAnimationFrame(() => {
+      titleInputRef.current?.focus()
+      window.focus()
+    })
+  }, [loading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,6 +85,7 @@ export default function TaskEdit() {
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="例: React hooks の復習"
             required
+            ref={titleInputRef}
           />
         </div>
 

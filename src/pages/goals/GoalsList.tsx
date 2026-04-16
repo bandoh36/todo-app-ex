@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { Goal } from '@/types'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function GoalsList() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [tilCounts, setTilCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([getAPI().goals.list(), getAPI().tils.list()]).then(([goalsList, tilsList]) => {
@@ -20,15 +22,16 @@ export default function GoalsList() {
     })
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('この目標を削除しますか？紐づく TIL の目標は外れます。')) return
-    await getAPI().goals.delete(id)
-    setGoals((prev) => prev.filter((g) => g.id !== id))
+  const handleDelete = async () => {
+    if (!deleteTargetId) return
+    await getAPI().goals.delete(deleteTargetId)
+    setGoals((prev) => prev.filter((g) => g.id !== deleteTargetId))
     setTilCounts((prev) => {
       const next = { ...prev }
-      delete next[id]
+      delete next[deleteTargetId]
       return next
     })
+    setDeleteTargetId(null)
   }
 
   return (
@@ -63,7 +66,7 @@ export default function GoalsList() {
                 {g.description && (
                   <p className="mt-1 text-sm text-gray-600">{g.description}</p>
                 )}
-                <span className="inline-block mt-2 text-xs text-indigo-600">
+                <span className="mt-2 inline-flex items-center rounded-full border border-cyan-200/45 bg-cyan-200/12 px-2 py-0.5 text-xs text-cyan-50">
                   TIL 紐付け: {tilCounts[g.id] ?? 0} 件
                 </span>
               </div>
@@ -76,7 +79,7 @@ export default function GoalsList() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => handleDelete(g.id)}
+                  onClick={() => setDeleteTargetId(g.id)}
                   className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
                 >
                   削除
@@ -86,6 +89,13 @@ export default function GoalsList() {
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="目標を削除しますか？"
+        message="紐づいている TIL の目標設定は解除されます。"
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

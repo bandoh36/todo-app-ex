@@ -1,6 +1,6 @@
 # MyTODO
 
-日々の TIL・筋トレ・楽しみ・目標を管理する Electron デスクトップアプリです。
+日々の TIL・筋トレ・予定・目標を管理する Electron デスクトップアプリです。
 
 ## 技術スタック
 
@@ -40,16 +40,16 @@ npm run build:all
 
 ## データの保存場所
 
-データは Electron の `userData` ディレクトリ内の `data/data.json` に保存されます。
+データはプロジェクト直下の `data/data.json` に保存されます。
 
-- Windows: `%APPDATA%/my-todo-app/data/data.json`
-- macOS: `~/Library/Application Support/my-todo-app/data/data.json`
+- パス: `./data/data.json`
+- 旧保存先（`%APPDATA%/my-todo-app/data/data.json`）にデータがある場合、初回起動時に自動で移行されます。
 
 ## 機能
 
-- **ダッシュボード**: 今日の TIL・筋トレ・楽しみイベント、直近の TIL
+- **ダッシュボード**: 今日の TIL・筋トレ・予定、直近の TIL
 - **TIL**: 学んだことのタイトル・内容・リンク、目標との紐付け
 - **筋トレ**: 日付と内容の記録
-- **カレンダー**: 月表示で TIL/筋トレ/楽しみイベントの有無を表示、日付クリックで TIL 新規作成
-- **楽しみ**: 映画の公開日などのイベント登録
+- **カレンダー**: 月表示で TIL/筋トレ/予定の有無を表示、日付クリックで TIL 新規作成
+- **予定**: 映画の公開日などの予定登録（日時未定でも登録可能。日時未定はカレンダー非表示で予定一覧のみ表示）
 - **目標**: 目標の管理、TIL と紐付け

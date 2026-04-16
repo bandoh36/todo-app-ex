@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   events: {
     list: () => ipcRenderer.invoke('events:list'),
     get: (id: string) => ipcRenderer.invoke('events:get', id),
-    create: (ev: { date: string; title: string; memo?: string }) =>
+    create: (ev: { date?: string; title: string; memo?: string }) =>
       ipcRenderer.invoke('events:create', ev),
     update: (id: string, updates: { date?: string; title?: string; memo?: string }) =>
       ipcRenderer.invoke('events:update', id, updates),

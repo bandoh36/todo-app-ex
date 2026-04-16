@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { TIL, Goal } from '@/types'
@@ -19,6 +19,7 @@ export default function TILEdit() {
   const [content, setContent] = useState('')
   const [link, setLink] = useState('')
   const [goalId, setGoalId] = useState<string>('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     getAPI()
@@ -45,6 +46,14 @@ export default function TILEdit() {
         setLoading(false)
       })
   }, [id, initialDate])
+
+  useEffect(() => {
+    if (loading) return
+    requestAnimationFrame(() => {
+      titleInputRef.current?.focus()
+      window.focus()
+    })
+  }, [loading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,6 +96,7 @@ export default function TILEdit() {
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="学んだことのタイトル"
             required
+            ref={titleInputRef}
           />
         </div>
         <div>

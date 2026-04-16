@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { Workout } from '@/types'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function WorkoutList() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     getAPI()
@@ -14,10 +16,11 @@ export default function WorkoutList() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('この筋トレ記録を削除しますか？')) return
-    await getAPI().workouts.delete(id)
-    setWorkouts((prev) => prev.filter((w) => w.id !== id))
+  const handleDelete = async () => {
+    if (!deleteTargetId) return
+    await getAPI().workouts.delete(deleteTargetId)
+    setWorkouts((prev) => prev.filter((w) => w.id !== deleteTargetId))
+    setDeleteTargetId(null)
   }
 
   const sorted = [...workouts].sort((a, b) => (b.date > a.date ? 1 : -1))
@@ -59,7 +62,7 @@ export default function WorkoutList() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => handleDelete(w.id)}
+                  onClick={() => setDeleteTargetId(w.id)}
                   className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
                 >
                   削除
@@ -69,6 +72,13 @@ export default function WorkoutList() {
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="筋トレ記録を削除しますか？"
+        message="この操作は取り消せません。"
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

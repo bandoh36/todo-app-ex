@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 import type { EnjoymentEvent } from '@/types'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function EnjoymentList() {
   const [events, setEvents] = useState<EnjoymentEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     getAPI()
@@ -14,13 +16,19 @@ export default function EnjoymentList() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('このイベントを削除しますか？')) return
-    await getAPI().events.delete(id)
-    setEvents((prev) => prev.filter((e) => e.id !== id))
+  const handleDelete = async () => {
+    if (!deleteTargetId) return
+    await getAPI().events.delete(deleteTargetId)
+    setEvents((prev) => prev.filter((e) => e.id !== deleteTargetId))
+    setDeleteTargetId(null)
   }
 
-  const sorted = [...events].sort((a, b) => (a.date > b.date ? 1 : -1))
+  const sorted = [...events].sort((a, b) => {
+    if (a.date && b.date) return a.date > b.date ? 1 : -1
+    if (a.date) return -1
+    if (b.date) return 1
+    return a.title.localeCompare(b.title, 'ja')
+  })
 
   return (
     <div>
@@ -46,7 +54,7 @@ export default function EnjoymentList() {
             >
               <div className="min-w-0 flex-1">
                 <Link to={`/enjoyment/${ev.id}`} className="block hover:opacity-80">
-                  <span className="text-gray-500 text-sm mr-2">{ev.date}</span>
+                  <span className="text-gray-500 text-sm mr-2">{ev.date ?? '日付未定'}</span>
                   <span className="font-medium text-gray-800">{ev.title}</span>
                 </Link>
                 {ev.memo && <p className="mt-1 text-sm text-gray-600">{ev.memo}</p>}
@@ -60,7 +68,7 @@ export default function EnjoymentList() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => handleDelete(ev.id)}
+                  onClick={() => setDeleteTargetId(ev.id)}
                   className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
                 >
                   削除
@@ -70,6 +78,13 @@ export default function EnjoymentList() {
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="予定を削除しますか？"
+        message="この操作は取り消せません。"
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

@@ -27,7 +27,7 @@ export interface Workout {
 
 export interface EnjoymentEvent {
   id: string
-  date: string
+  date?: string
   title: string
   memo?: string
 }
@@ -60,13 +60,21 @@ const DEFAULT_DATA: DataFile = {
 }
 
 const DATA_FILE = 'data.json'
+const PROJECT_DATA_DIR = path.join(process.cwd(), 'data')
+const LEGACY_USER_DATA_FILE = () => path.join(app.getPath('userData'), 'data', DATA_FILE)
 
 const getDataDir = () => {
-  const userData = app.getPath('userData')
-  const dataDir = path.join(userData, 'data')
+  const dataDir = PROJECT_DATA_DIR
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true })
   }
+
+  const currentDataFile = path.join(dataDir, DATA_FILE)
+  const legacyDataFile = LEGACY_USER_DATA_FILE()
+  if (!fs.existsSync(currentDataFile) && fs.existsSync(legacyDataFile)) {
+    fs.copyFileSync(legacyDataFile, currentDataFile)
+  }
+
   return dataDir
 }
 

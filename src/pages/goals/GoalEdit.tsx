@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
 
@@ -9,6 +9,7 @@ export default function GoalEdit() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [targetDate, setTargetDate] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!id) {
@@ -26,6 +27,14 @@ export default function GoalEdit() {
         setLoading(false)
       })
   }, [id])
+
+  useEffect(() => {
+    if (loading) return
+    requestAnimationFrame(() => {
+      titleInputRef.current?.focus()
+      window.focus()
+    })
+  }, [loading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +72,7 @@ export default function GoalEdit() {
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="目標のタイトル"
             required
+            ref={titleInputRef}
           />
         </div>
         <div>

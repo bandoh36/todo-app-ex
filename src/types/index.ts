@@ -23,7 +23,7 @@ export interface Workout {
 
 export interface EnjoymentEvent {
   id: string
-  date: string // ISO date
+  date?: string // ISO date (optional)
   title: string
   memo?: string
 }

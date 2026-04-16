@@ -13,20 +13,20 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-52 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-gray-800">MyTODO</h1>
+    <div className="flex min-h-screen bg-linear-to-br from-sky-900 via-blue-900 to-slate-950">
+      <aside className="w-52 flex flex-col border-r border-sky-200/20 bg-slate-900/75 backdrop-blur-md">
+        <div className="border-b border-sky-200/20 p-4">
+          <h1 className="text-lg font-bold text-sky-100">MyTODO</h1>
         </div>
         <nav className="flex-1 p-2">
           {navItems.map(({ path, label }) => (
             <Link
               key={path}
               to={path}
-              className={`block px-3 py-2 rounded-md text-sm font-medium ${
+              className={`block rounded-md px-3 py-2 text-sm font-medium ${
                 location.pathname === path || (path !== '/' && location.pathname.startsWith(path))
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? 'bg-sky-200/25 text-sky-50'
+                  : 'text-sky-100/80 hover:bg-sky-200/10'
               }`}
             >
               {label}
@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="app-content-skin flex-1 overflow-auto bg-transparent p-6">{children}</main>
     </div>
   )
 }

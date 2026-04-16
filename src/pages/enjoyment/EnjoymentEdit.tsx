@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { getAPI } from '@/lib/api'
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 export default function EnjoymentEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const initialDate = (location.state as { date?: string } | null)?.date ?? todayStr()
+  const initialDate = (location.state as { date?: string } | null)?.date ?? ''
   const [loading, setLoading] = useState(!!id)
   const [date, setDate] = useState(initialDate)
   const [title, setTitle] = useState('')
   const [memo, setMemo] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!id) {
@@ -26,7 +23,7 @@ export default function EnjoymentEdit() {
       .events.get(id)
       .then((ev) => {
         if (ev) {
-          setDate(ev.date)
+          setDate(ev.date ?? '')
           setTitle(ev.title)
           setMemo(ev.memo ?? '')
         }
@@ -34,13 +31,21 @@ export default function EnjoymentEdit() {
       })
   }, [id, initialDate])
 
+  useEffect(() => {
+    if (loading) return
+    requestAnimationFrame(() => {
+      titleInputRef.current?.focus()
+      window.focus()
+    })
+  }, [loading])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const api = getAPI()
     if (id) {
-      await api.events.update(id, { date, title, memo: memo || undefined })
+      await api.events.update(id, { date: date || undefined, title, memo: memo || undefined })
     } else {
-      await api.events.create({ date, title, memo: memo || undefined })
+      await api.events.create({ date: date || undefined, title, memo: memo || undefined })
     }
     navigate('/enjoyment')
   }
@@ -59,14 +64,14 @@ export default function EnjoymentEdit() {
       </div>
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">日付（任意）</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            required
           />
+          <p className="mt-1 text-xs text-gray-500">未入力なら「日付未定」として予定一覧に保存されます。</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">タイトル</label>
@@ -75,8 +80,9 @@ export default function EnjoymentEdit() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="例: 〇〇の映画公開日"
+            placeholder="例: 次に観たい映画"
             required
+            ref={titleInputRef}
           />
         </div>
         <div>

@@ -46,7 +46,7 @@ interface ElectronAPI {
   events: {
     list: () => Promise<EnjoymentEvent[]>
     get: (id: string) => Promise<EnjoymentEvent | null>
-    create: (ev: { date: string; title: string; memo?: string }) => Promise<EnjoymentEvent>
+    create: (ev: { date?: string; title: string; memo?: string }) => Promise<EnjoymentEvent>
     update: (
       id: string,
       updates: { date?: string; title?: string; memo?: string }
