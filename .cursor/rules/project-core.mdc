@@ -1,0 +1,15 @@
+---
+description: MyTODO 全体の基本方針（常時）
+alwaysApply: true
+---
+
+# プロジェクト基本
+
+- **スタック**: Electron 40 + React 19 + Vite 7 + TypeScript + Tailwind 4。ルーティングは `react-router-dom` v7
+- **データ**: `./data/data.json`（gitignore）。スキーマは `electron/store.ts` が正
+- **ビルド確認**: まとまった変更のあと `npm run build` を実行する
+- **用語**: 画面名は「予定」（旧称の「楽しみ」は使わない）
+- **破壊的操作の UI**: ネイティブ `confirm()` は使わない。`src/components/ConfirmDialog.tsx` を使う
+- **ドキュメント**: アーキ・永続化を触ったら `docs/architecture.md` か `docs/instructions.md` を更新
+
+詳細は `AGENTS.md` と `docs/instructions.md` を参照。

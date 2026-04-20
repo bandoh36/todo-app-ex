@@ -8,6 +8,16 @@
 - Tailwind CSS 4
 - react-router-dom v7
 
+## AI / 協働開発向けドキュメント
+
+エージェントや Cursor との運用には次を参照してください。
+
+- **[AGENTS.md](./AGENTS.md)** — 入口（ルール・スキルへのリンク一覧）
+- **[docs/instructions.md](./docs/instructions.md)** — 開発・運用インストラクション（禁止事項・チェックリスト）
+- **[docs/architecture.md](./docs/architecture.md)** — アーキテクチャ概要
+- **`.cursor/rules/`** — Cursor プロジェクトルール（常時適用／ファイル別）
+- **`.cursor/skills/mytodo-dev/`** — このリポジトリ向けワークフロー（Skill）
+
 ## セットアップ
 
 ```bash
@@ -53,3 +63,4 @@ npm run build:all
 - **カレンダー**: 月表示で TIL/筋トレ/予定の有無を表示、日付クリックで TIL 新規作成
 - **予定**: 映画の公開日などの予定登録（日時未定でも登録可能。日時未定はカレンダー非表示で予定一覧のみ表示）
 - **目標**: 目標の管理、TIL と紐付け
+- **RPG 風モチベ**: 累計 EXP・レベル・ストリーク、週次レポート、行動に応じた特典（EXP ボーナス等）

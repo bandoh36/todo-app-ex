@@ -1,0 +1,12 @@
+---
+description: レンダラー React / スタイルの実装ルール
+globs: src/**/*
+alwaysApply: false
+---
+
+# レンダラー（React）
+
+- **IPC**: `window.electronAPI` は `getAPI()`（`src/lib/api.ts`）経由のみ
+- **スタイル**: グローバルは `src/index.css`。一覧フォームには `.app-content-skin` が効く。青背景上でインディゴ文字だけが残らないようコントラストを確認
+- **ルーティング**: 画面は `src/pages/`、ルートは `src/App.tsx`
+- **Router state**: カレンダーから日付を渡すなど `location.state` を使う箇所は型を明示

@@ -11,11 +11,31 @@ import {
   type EnjoymentEvent,
   type Task,
 } from './store'
+import {
+  awardXp,
+  RAW_XP,
+  todayStr,
+  buildMotivationBoard,
+  type AwardResult,
+} from './gamification'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 let mainWindow: BrowserWindow | null = null
+
+function saveAfterAward(r: AwardResult) {
+  writeData(r.data)
+  if (r.leveledUp && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('gamification:level-up', {
+      level: r.newLevel,
+      gainedXp: r.gainedXp,
+      gainedPoints: r.gainedPoints,
+      totalPoints: r.totalPoints,
+      newPerks: r.newPerks.map((p) => ({ id: p.id, label: p.label })),
+    })
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -63,7 +83,8 @@ ipcMain.handle('goals:create', (_e, goal: Omit<Goal, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString().slice(0, 10),
   }
   data.goals.push(newGoal)
-  writeData(data)
+  const r = awardXp(data, RAW_XP.goal_create, 'goal_create', todayStr())
+  saveAfterAward(r)
   return newGoal
 })
 ipcMain.handle('goals:update', (_e, id: string, updates: Partial<Goal>) => {
@@ -89,7 +110,8 @@ ipcMain.handle('tils:create', (_e, til: Omit<TIL, 'id'>) => {
   const data = readData()
   const newTil: TIL = { ...til, id: randomUUID() }
   data.tils.push(newTil)
-  writeData(data)
+  const r = awardXp(data, RAW_XP.til_create, 'til_create', todayStr())
+  saveAfterAward(r)
   return newTil
 })
 ipcMain.handle('tils:update', (_e, id: string, updates: Partial<TIL>) => {
@@ -116,7 +138,8 @@ ipcMain.handle('workouts:create', (_e, workout: Omit<Workout, 'id'>) => {
   const data = readData()
   const newWorkout: Workout = { ...workout, id: randomUUID() }
   data.workouts.push(newWorkout)
-  writeData(data)
+  const r = awardXp(data, RAW_XP.workout_create, 'workout_create', todayStr())
+  saveAfterAward(r)
   return newWorkout
 })
 ipcMain.handle('workouts:update', (_e, id: string, updates: Partial<Workout>) => {
@@ -143,7 +166,8 @@ ipcMain.handle('events:create', (_e, ev: Omit<EnjoymentEvent, 'id'>) => {
   const data = readData()
   const newEv: EnjoymentEvent = { ...ev, id: randomUUID() }
   data.events.push(newEv)
-  writeData(data)
+  const r = awardXp(data, RAW_XP.event_create, 'event_create', todayStr())
+  saveAfterAward(r)
   return newEv
 })
 ipcMain.handle('events:update', (_e, id: string, updates: Partial<EnjoymentEvent>) => {
@@ -172,16 +196,28 @@ ipcMain.handle('tasks:create', (_e, task: Omit<Task, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString().slice(0, 10),
   }
   data.tasks.push(newTask)
-  writeData(data)
+  const r = awardXp(data, RAW_XP.task_create, 'task_create', todayStr())
+  saveAfterAward(r)
   return newTask
 })
 ipcMain.handle('tasks:update', (_e, id: string, updates: Partial<Task>) => {
   const data = readData()
   const i = data.tasks.findIndex((t) => t.id === id)
   if (i === -1) return null
-  data.tasks[i] = { ...data.tasks[i], ...updates }
+  const prev = data.tasks[i]
+  data.tasks[i] = { ...prev, ...updates }
+
+  if (updates.status === 'done' && prev.status !== 'done' && !prev.completionXpGranted) {
+    data.tasks[i] = { ...data.tasks[i], completionXpGranted: true }
+    const r = awardXp(data, RAW_XP.task_complete, 'task_complete', todayStr())
+    saveAfterAward(r)
+    const out = r.data.tasks.find((t) => t.id === id)
+    return out ?? null
+  }
+
   writeData(data)
-  return data.tasks[i]
+  const out = data.tasks.find((t) => t.id === id)
+  return out ?? null
 })
 ipcMain.handle('tasks:delete', (_e, id: string) => {
   const data = readData()
@@ -189,6 +225,8 @@ ipcMain.handle('tasks:delete', (_e, id: string) => {
   writeData(data)
   return true
 })
+
+ipcMain.handle('stats:motivationBoard', () => buildMotivationBoard(readData()))
 
 // Calendar: day summaries for a month (YYYY-MM)
 ipcMain.handle('calendar:monthSummary', (_e, year: number, month: number) => {

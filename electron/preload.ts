@@ -64,4 +64,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     monthSummary: (year: number, month: number) =>
       ipcRenderer.invoke('calendar:monthSummary', year, month),
   },
+  stats: {
+    motivationBoard: () => ipcRenderer.invoke('stats:motivationBoard'),
+  },
+  gamification: {
+    onLevelUp: (handler: (payload: {
+      level: number
+      gainedXp: number
+      gainedPoints: number
+      totalPoints: number
+      newPerks: { id: string; label: string }[]
+    }) => void) => {
+      const channel = 'gamification:level-up'
+      const wrapped = (
+        _e: unknown,
+        payload: {
+          level: number
+          gainedXp: number
+          gainedPoints: number
+          totalPoints: number
+          newPerks: { id: string; label: string }[]
+        },
+      ) => handler(payload)
+      ipcRenderer.on(channel, wrapped)
+      return () => ipcRenderer.removeListener(channel, wrapped)
+    },
+  },
 })

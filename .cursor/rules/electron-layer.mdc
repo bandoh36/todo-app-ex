@@ -1,0 +1,12 @@
+---
+description: Electron main / preload / store の実装ルール
+globs: electron/**
+alwaysApply: false
+---
+
+# Electron 層
+
+- **一貫性**: 新しい IPC は `main.ts`（`ipcMain.handle`）と `preload.ts`（`invoke`）と `src/vite-env.d.ts`（`ElectronAPI` 型）の3方に追加
+- **型**: 共有型は `electron/store.ts` を起点。レンダラー用の重複は `src/types/` と揃える
+- **ESM**: `import.meta.url` + `fileURLToPath` で `__dirname` 相当。`main` のプリロードはビルド成果物名（`preload.mjs`）に合わせる
+- **永続化**: 保存先は `store.ts` の方針に従う。移行ロジックを壊さない

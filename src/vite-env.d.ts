@@ -1,6 +1,15 @@
 /// <reference types="vite/client" />
 
-import type { Goal, TIL, Workout, EnjoymentEvent, Task, TaskStatus } from './types'
+import type {
+  Goal,
+  TIL,
+  Workout,
+  EnjoymentEvent,
+  Task,
+  TaskStatus,
+  MotivationBoard,
+  LevelUpPayload,
+} from './types'
 
 interface ElectronAPI {
   ping: () => Promise<string>
@@ -87,6 +96,12 @@ interface ElectronAPI {
         workoutContents: string[]
       }[]
     >
+  }
+  stats: {
+    motivationBoard: () => Promise<MotivationBoard>
+  }
+  gamification: {
+    onLevelUp: (handler: (payload: LevelUpPayload) => void) => () => void
   }
 }
 
