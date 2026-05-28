@@ -9,6 +9,7 @@ import type {
   TaskStatus,
   MotivationBoard,
   LevelUpPayload,
+  DailyQuestClaimResult,
 } from './types'
 
 interface ElectronAPI {
@@ -99,6 +100,7 @@ interface ElectronAPI {
   }
   stats: {
     motivationBoard: () => Promise<MotivationBoard>
+    claimDailyQuest: (questId: 'daily_til_1' | 'daily_task_done_1' | 'daily_workout_1') => Promise<DailyQuestClaimResult>
   }
   gamification: {
     onLevelUp: (handler: (payload: LevelUpPayload) => void) => () => void

@@ -16,6 +16,7 @@ import {
   RAW_XP,
   todayStr,
   buildMotivationBoard,
+  evaluateDailyQuests,
   type AwardResult,
 } from './gamification'
 
@@ -23,6 +24,12 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 let mainWindow: BrowserWindow | null = null
+
+function getWindowIconPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(__dirname, '../build/icon.png')
+}
 
 function saveAfterAward(r: AwardResult) {
   writeData(r.data)
@@ -41,6 +48,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: getWindowIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -227,6 +235,34 @@ ipcMain.handle('tasks:delete', (_e, id: string) => {
 })
 
 ipcMain.handle('stats:motivationBoard', () => buildMotivationBoard(readData()))
+ipcMain.handle('stats:claimDailyQuest', (_e, questId: string) => {
+  const data = readData()
+  const today = todayStr()
+  const quests = evaluateDailyQuests(data, today)
+  const quest = quests.find((q) => q.id === questId)
+  if (!quest) return { ok: false, reason: 'NOT_FOUND' as const }
+  if (!quest.completed) return { ok: false, reason: 'NOT_COMPLETED' as const }
+  if (quest.claimed) return { ok: false, reason: 'ALREADY_CLAIMED' as const }
+
+  const claimedIds = new Set(
+    data.gamification.dailyQuestClaimDate === today ? data.gamification.dailyQuestClaimedIds ?? [] : []
+  )
+  claimedIds.add(questId)
+  data.gamification = {
+    ...data.gamification,
+    dailyQuestClaimDate: today,
+    dailyQuestClaimedIds: [...claimedIds],
+  }
+
+  const r = awardXp(data, RAW_XP.daily_quest_claim, 'daily_quest_claim', today)
+  saveAfterAward(r)
+  return {
+    ok: true,
+    gainedXp: r.gainedXp,
+    gainedPoints: r.gainedPoints,
+    board: buildMotivationBoard(r.data),
+  }
+})
 
 // Calendar: day summaries for a month (YYYY-MM)
 ipcMain.handle('calendar:monthSummary', (_e, year: number, month: number) => {

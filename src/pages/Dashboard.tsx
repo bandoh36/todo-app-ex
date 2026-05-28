@@ -16,6 +16,9 @@ export default function Dashboard() {
   const [recentTils, setRecentTils] = useState<TIL[]>([]);
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [motivation, setMotivation] = useState<MotivationBoard | null>(null);
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null);
+  const [claimMessage, setClaimMessage] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const today = todayStr();
 
@@ -55,25 +58,98 @@ export default function Dashboard() {
   const statusLabel = (status: Task["status"]) =>
     status === "todo" ? "未着手" : status === "doing" ? "進行中" : "完了";
 
+  const handleClaimDailyQuest = async (
+    questId: "daily_til_1" | "daily_task_done_1" | "daily_workout_1",
+  ) => {
+    setClaimingQuestId(questId);
+    setClaimMessage("");
+    try {
+      const res = await getAPI().stats.claimDailyQuest(questId);
+      if (res.ok) {
+        setMotivation(res.board);
+        setClaimMessage(
+          `デイリー報酬獲得: +${res.gainedXp} EXP / +${res.gainedPoints} PT`,
+        );
+      } else if (res.reason === "NOT_COMPLETED") {
+        setClaimMessage("まだ条件を満たしていません。");
+      } else if (res.reason === "ALREADY_CLAIMED") {
+        setClaimMessage("このクエストは受け取り済みです。");
+      } else {
+        setClaimMessage("クエストが見つかりませんでした。");
+      }
+    } finally {
+      setClaimingQuestId(null);
+    }
+  };
+
   return (
     <div className="persona-dashboard relative overflow-hidden rounded-3xl border border-sky-200/45 p-5 text-slate-50 shadow-2xl shadow-sky-900/30">
       <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-100/80 blur-2xl moon-glow" />
       <div className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-sky-300/35 blur-3xl" />
 
-      <section className="relative mb-5">
-        <div className="mb-2 inline-flex -skew-x-12 bg-sky-300 px-4 py-1">
-          <span className="skew-x-12 text-xs font-bold tracking-[0.25em] text-slate-950">
-            MIDNIGHT LOG
-          </span>
+      <section className="relative mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="inline-flex -skew-x-12 bg-sky-300 px-3 py-1">
+            <span className="skew-x-12 text-[10px] font-bold tracking-[0.25em] text-slate-950">
+              MIDNIGHT LOG
+            </span>
+          </div>
+          <h2 className="persona-title mt-1 text-2xl font-extrabold tracking-wide text-cyan-50 drop-shadow-[0_0_12px_rgba(186,230,253,0.6)] md:text-3xl">
+            DASHBOARD
+          </h2>
         </div>
-        <h2 className="persona-title text-3xl font-extrabold tracking-wide text-cyan-50 drop-shadow-[0_0_12px_rgba(186,230,253,0.6)] md:text-4xl">
-          DASHBOARD
-        </h2>
-        <p className="mt-2 text-sm text-cyan-50/90">- {today} -</p>
+        <p className="text-sm text-cyan-50/90">- {today} -</p>
       </section>
 
       {motivation && (
-        <section className="relative mb-5">
+        <section className="relative mb-3">
+          <div className="mb-3 inline-flex -skew-x-12 bg-violet-300/35 px-4 py-1">
+            <span className="skew-x-12 text-xs font-bold tracking-[0.28em] text-slate-950">
+              DAILY QUEST
+            </span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            {motivation.dailyQuests.quests.map((q) => {
+              const canClaim = q.completed && !q.claimed;
+              const isClaiming = claimingQuestId === q.id;
+              return (
+                <article key={q.id} className="persona-panel py-2">
+                  <p className="text-xs font-semibold text-cyan-50">{q.label}</p>
+                  <p className="mt-2 text-xs text-amber-100">
+                    進捗: {Math.min(q.progress, q.target)} / {q.target}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!canClaim || isClaiming}
+                    onClick={() => handleClaimDailyQuest(q.id)}
+                    className={`mt-2 w-full rounded-md border px-2 py-1 text-[11px] font-semibold tracking-[0.04em] ${
+                      q.claimed
+                        ? "border-emerald-200/40 bg-emerald-300/15 text-emerald-100"
+                        : canClaim
+                          ? "border-amber-200/55 bg-amber-300/20 text-amber-50 hover:bg-amber-300/30"
+                          : "border-sky-200/30 bg-sky-200/8 text-sky-100/60"
+                    }`}
+                  >
+                    {q.claimed
+                      ? "受け取り済み"
+                      : isClaiming
+                        ? "受け取り中..."
+                        : canClaim
+                          ? "報酬を受け取る"
+                          : "未達成"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+          {claimMessage && (
+            <p className="mt-2 text-xs font-medium text-cyan-100">{claimMessage}</p>
+          )}
+        </section>
+      )}
+
+      {motivation && (
+        <section className="relative mb-3">
           <div className="mb-3 inline-flex -skew-x-12 bg-amber-300/35 px-4 py-1">
             <span className="skew-x-12 text-xs font-bold tracking-[0.28em] text-slate-950">
               RPG STATUS
@@ -165,46 +241,62 @@ export default function Dashboard() {
             </article>
 
             <article className="persona-panel border-violet-200/25 py-3">
-              <p className="persona-subtitle mb-3 text-[10px] tracking-[0.25em] text-violet-100/95">
-                WEEKLY REPORT
-              </p>
-              <p className="mb-4 text-xs text-sky-100/85">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="persona-subtitle text-[10px] tracking-[0.25em] text-violet-100/95">
+                  WEEKLY REPORT
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowWeeklyReport((v) => !v)}
+                  className="rounded border border-violet-200/40 px-2 py-0.5 text-[10px] font-semibold text-violet-100/90 hover:bg-violet-200/15"
+                >
+                  {showWeeklyReport ? "閉じる" : "開く"}
+                </button>
+              </div>
+              <p className="text-xs text-sky-100/85">
                 {motivation.weekly.weekStart} ～ {motivation.weekly.weekEnd}{" "}
                 <span className="text-sky-200/70">（月曜始まり）</span>
               </p>
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-sky-50">
-                <dt className="text-sky-200/80">獲得 EXP</dt>
-                <dd className="text-right font-semibold text-amber-100">
-                  {motivation.weekly.xpGained}
-                </dd>
-                <dt className="text-sky-200/80">TIL</dt>
-                <dd className="text-right">{motivation.weekly.tilCount}</dd>
-                <dt className="text-sky-200/80">筋トレ</dt>
-                <dd className="text-right">{motivation.weekly.workoutCount}</dd>
-                <dt className="text-sky-200/80">予定（日付あり）</dt>
-                <dd className="text-right">{motivation.weekly.datedEventCount}</dd>
-                <dt className="text-sky-200/80">TODO 完了</dt>
-                <dd className="text-right">{motivation.weekly.tasksCompleted}</dd>
-                <dt className="text-sky-200/80">TODO 登録</dt>
-                <dd className="text-right">{motivation.weekly.tasksCreated}</dd>
-                <dt className="text-sky-200/80">目標 新規</dt>
-                <dd className="text-right">{motivation.weekly.goalsCreated}</dd>
-              </dl>
-              <p className="mt-4 text-[11px] leading-relaxed text-sky-100/75">
-                EXP は TODO・TIL・筋トレ・予定・目標の作成 / TODO
-                完了で付与されます。連続ログインではなく、「記録や完了で
-                EXP が入った日」がストリークにカウントされます。
-              </p>
+              {!showWeeklyReport ? (
+                <p className="mt-2 text-[11px] text-sky-100/75">
+                  EXP {motivation.weekly.xpGained} / TODO完了 {motivation.weekly.tasksCompleted}
+                </p>
+              ) : (
+                <>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-sky-50">
+                    <dt className="text-sky-200/80">獲得 EXP</dt>
+                    <dd className="text-right font-semibold text-amber-100">
+                      {motivation.weekly.xpGained}
+                    </dd>
+                    <dt className="text-sky-200/80">TIL</dt>
+                    <dd className="text-right">{motivation.weekly.tilCount}</dd>
+                    <dt className="text-sky-200/80">筋トレ</dt>
+                    <dd className="text-right">{motivation.weekly.workoutCount}</dd>
+                    <dt className="text-sky-200/80">予定（日付あり）</dt>
+                    <dd className="text-right">{motivation.weekly.datedEventCount}</dd>
+                    <dt className="text-sky-200/80">TODO 完了</dt>
+                    <dd className="text-right">{motivation.weekly.tasksCompleted}</dd>
+                    <dt className="text-sky-200/80">TODO 登録</dt>
+                    <dd className="text-right">{motivation.weekly.tasksCreated}</dd>
+                    <dt className="text-sky-200/80">目標 新規</dt>
+                    <dd className="text-right">{motivation.weekly.goalsCreated}</dd>
+                  </dl>
+                  <p className="mt-3 text-[11px] leading-relaxed text-sky-100/75">
+                    EXP は TODO・TIL・筋トレ・予定・目標の作成 / TODO
+                    完了で付与。ストリークは「EXP が入った日」をカウントします。
+                  </p>
+                </>
+              )}
             </article>
           </div>
         </section>
       )}
 
-      <section className="mb-5">
+      <section className="mb-3">
         <h3 className="persona-subtitle mb-3 text-xs tracking-[0.2em] text-sky-200/90">
           TODAY FOCUS
         </h3>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <article className="persona-panel">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold text-sky-100">TIL</span>
@@ -220,7 +312,7 @@ export default function Dashboard() {
               <p className="text-sm text-slate-300/80">まだありません</p>
             ) : (
               <ul className="space-y-2">
-                {todayTils.slice(0, 3).map((t) => (
+                {todayTils.slice(0, 2).map((t) => (
                   <li key={t.id}>
                     <Link to={`/til/${t.id}`} className="persona-item-link">
                       {t.title}
@@ -248,7 +340,7 @@ export default function Dashboard() {
               <p className="text-sm text-slate-300/80">まだありません</p>
             ) : (
               <ul className="space-y-2">
-                {todayWorkouts.slice(0, 3).map((w) => (
+                {todayWorkouts.slice(0, 2).map((w) => (
                   <li key={w.id}>
                     <Link
                       to={`/workout/${w.id}`}
@@ -277,7 +369,7 @@ export default function Dashboard() {
               <p className="text-sm text-slate-300/80">今日の予定なし</p>
             ) : (
               <ul className="space-y-2">
-                {todayEvents.slice(0, 3).map((e) => (
+                {todayEvents.slice(0, 2).map((e) => (
                   <li key={e.id}>
                     <Link
                       to={`/enjoyment/${e.id}`}
@@ -293,8 +385,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="mb-2 grid gap-4 xl:grid-cols-2">
-        <article className="persona-panel">
+      <section className="mb-0 grid gap-2 xl:grid-cols-2">
+        <article className="persona-panel py-3">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="persona-subtitle text-xs tracking-[0.2em] text-sky-200/90">
               RECENT TASKS
@@ -309,7 +401,7 @@ export default function Dashboard() {
             </p>
           ) : (
             <ul className="space-y-2">
-              {recentTasks.map((task) => (
+              {recentTasks.slice(0, 2).map((task) => (
                 <li key={task.id}>
                   <Link to={`/tasks/${task.id}`} className="persona-list-row">
                     <div className="min-w-0 flex-1">
@@ -339,7 +431,7 @@ export default function Dashboard() {
           )}
         </article>
 
-        <article className="persona-panel">
+        <article className="persona-panel py-3">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="persona-subtitle text-xs tracking-[0.2em] text-sky-200/90">
               RECENT TIL
@@ -352,7 +444,7 @@ export default function Dashboard() {
             <p className="text-sm text-slate-300/80">TIL がまだありません。</p>
           ) : (
             <ul className="space-y-2">
-              {recentTils.map((t) => (
+              {recentTils.slice(0, 2).map((t) => (
                 <li key={t.id}>
                   <Link to={`/til/${t.id}`} className="persona-list-row">
                     <div className="min-w-0 flex-1">

@@ -49,6 +49,8 @@ export interface Gamification {
   totalXp: number
   rewardPoints: number
   pointModelVersion: number
+  dailyQuestClaimDate?: string
+  dailyQuestClaimedIds?: string[]
   lastActivityDate?: string
   streakDays: number
   longestStreak: number
@@ -61,6 +63,7 @@ export type XpLedgerReason =
   | 'workout_create'
   | 'event_create'
   | 'goal_create'
+  | 'daily_quest_claim'
 
 export interface XpLedgerEntry {
   id: string
@@ -83,6 +86,7 @@ const DEFAULT_GAMIFICATION: Gamification = {
   totalXp: 0,
   rewardPoints: 0,
   pointModelVersion: 2,
+  dailyQuestClaimedIds: [],
   streakDays: 0,
   longestStreak: 0,
 }
@@ -117,6 +121,7 @@ function migratePoints(gamification: Gamification): Gamification {
     ...gamification,
     rewardPoints: Math.max(gamification.rewardPoints, pointsFromXp + pointsFromLevelUps),
     pointModelVersion: POINT_MODEL_VERSION,
+    dailyQuestClaimedIds: gamification.dailyQuestClaimedIds ?? [],
   }
 }
 
@@ -166,6 +171,7 @@ export const readData = (): DataFile => {
         ...DEFAULT_GAMIFICATION,
         ...gIn,
         pointModelVersion: typeof gIn.pointModelVersion === 'number' ? gIn.pointModelVersion : 1,
+        dailyQuestClaimedIds: Array.isArray(gIn.dailyQuestClaimedIds) ? gIn.dailyQuestClaimedIds : [],
       }),
       xpLedger: parsed.xpLedger ?? [],
     }

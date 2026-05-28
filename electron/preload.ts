@@ -66,6 +66,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   stats: {
     motivationBoard: () => ipcRenderer.invoke('stats:motivationBoard'),
+    claimDailyQuest: (questId: 'daily_til_1' | 'daily_task_done_1' | 'daily_workout_1') =>
+      ipcRenderer.invoke('stats:claimDailyQuest', questId),
   },
   gamification: {
     onLevelUp: (handler: (payload: {

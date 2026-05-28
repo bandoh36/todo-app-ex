@@ -72,7 +72,23 @@ export interface MotivationBoard {
     tasksCreated: number
     goalsCreated: number
   }
+  dailyQuests: {
+    date: string
+    quests: {
+      id: 'daily_til_1' | 'daily_task_done_1' | 'daily_workout_1'
+      label: string
+      description: string
+      target: number
+      progress: number
+      completed: boolean
+      claimed: boolean
+    }[]
+  }
 }
+
+export type DailyQuestClaimResult =
+  | { ok: true; gainedXp: number; gainedPoints: number; board: MotivationBoard }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_COMPLETED' | 'ALREADY_CLAIMED' }
 
 export interface DaySummary {
   date: string

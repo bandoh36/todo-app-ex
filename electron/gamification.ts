@@ -10,6 +10,7 @@ export const XP_GLOBAL_MULTIPLIER = 1
 export const POINTS_PER_XP = 12
 /** レベルアップ時の追加ポイント */
 export const LEVEL_UP_POINT_BONUS = 300
+export const DAILY_QUEST_XP_REWARD = 22
 
 /** 報酬算出の素 EXP（特典バウンド前・XP_GLOBAL_MULTIPLIER・レベル倍率の入力） */
 export const RAW_XP: Record<XpLedgerReason, number> = {
@@ -19,6 +20,7 @@ export const RAW_XP: Record<XpLedgerReason, number> = {
   workout_create: 26,
   event_create: 16,
   goal_create: 14,
+  daily_quest_claim: DAILY_QUEST_XP_REWARD,
 }
 
 /** レベル L から L+1 に上がるのに必要な XP（そのレベル帯で貯める量） */
@@ -73,7 +75,11 @@ export function getXpMultiplierFromXp(totalXp: number): number {
 }
 
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function parseLocalDate(str: string): Date {
@@ -206,7 +212,10 @@ export function startOfWeekMonday(d: Date): Date {
 }
 
 export function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export type MotivationBoard = {
@@ -233,6 +242,68 @@ export type MotivationBoard = {
     tasksCreated: number
     goalsCreated: number
   }
+  dailyQuests: {
+    date: string
+    quests: DailyQuestProgress[]
+  }
+}
+
+export type DailyQuestDefinition = {
+  id: 'daily_til_1' | 'daily_task_done_1' | 'daily_workout_1'
+  label: string
+  description: string
+  target: number
+}
+
+export type DailyQuestProgress = DailyQuestDefinition & {
+  progress: number
+  completed: boolean
+  claimed: boolean
+}
+
+export const DAILY_QUESTS: DailyQuestDefinition[] = [
+  {
+    id: 'daily_til_1',
+    label: '学びの記録',
+    description: '今日の TIL を1件登録する',
+    target: 1,
+  },
+  {
+    id: 'daily_task_done_1',
+    label: 'タスク撃破',
+    description: 'TODO を1件完了にする',
+    target: 1,
+  },
+  {
+    id: 'daily_workout_1',
+    label: 'ボディメンテ',
+    description: '筋トレを1件記録する',
+    target: 1,
+  },
+]
+
+function todayDoneTaskCount(data: DataFile, date: string): number {
+  const ledger = data.xpLedger ?? []
+  return ledger.filter((e) => e.date === date && e.reason === 'task_complete').length
+}
+
+function claimedIdsForDate(g: Gamification, date: string): string[] {
+  if (g.dailyQuestClaimDate !== date) return []
+  return g.dailyQuestClaimedIds ?? []
+}
+
+export function evaluateDailyQuests(data: DataFile, date = todayStr()): DailyQuestProgress[] {
+  const tilCount = data.tils.filter((t) => t.date === date).length
+  const workoutCount = data.workouts.filter((w) => w.date === date).length
+  const taskDoneCount = todayDoneTaskCount(data, date)
+  const claimed = new Set(claimedIdsForDate(data.gamification, date))
+
+  return DAILY_QUESTS.map((q) => {
+    const progress =
+      q.id === 'daily_til_1' ? tilCount : q.id === 'daily_workout_1' ? workoutCount : taskDoneCount
+    const completed = progress >= q.target
+    return { ...q, progress, completed, claimed: claimed.has(q.id) }
+  })
 }
 
 export function buildMotivationBoard(data: DataFile): MotivationBoard {
@@ -259,6 +330,8 @@ export function buildMotivationBoard(data: DataFile): MotivationBoard {
   const tasksCompleted = inWeek.filter((e) => e.reason === 'task_complete').length
   const tasksCreated = inWeek.filter((e) => e.reason === 'task_create').length
   const goalsCreated = inWeek.filter((e) => e.reason === 'goal_create').length
+  const today = todayStr()
+  const dailyQuests = evaluateDailyQuests(data, today)
 
   return {
     gamification: {
@@ -283,6 +356,10 @@ export function buildMotivationBoard(data: DataFile): MotivationBoard {
       tasksCompleted,
       tasksCreated,
       goalsCreated,
+    },
+    dailyQuests: {
+      date: today,
+      quests: dailyQuests,
     },
   }
 }
